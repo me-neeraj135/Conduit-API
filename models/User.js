@@ -1,6 +1,8 @@
-var bcrypt = require('bcrypt');
-var jwt = require('jsonwebtoken');
-var mongoose = require('mongoose');
+/** @format */
+
+var bcrypt = require("bcrypt");
+var jwt = require("jsonwebtoken");
+var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 var userSchema = new Schema(
@@ -12,16 +14,16 @@ var userSchema = new Schema(
     bio: { type: String },
     avatar: { type: String },
     following: { type: Boolean },
-    followingList: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    followersList: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    followingList: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    followersList: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );
 
 // Hashing the password
-userSchema.pre('save', async function (next) {
+userSchema.pre("save", async function (next) {
   try {
-    if (this.password && this.isModified('password')) {
+    if (this.password && this.isModified("password")) {
       this.password = await bcrypt.hash(this.password, 10);
     }
     return next();
@@ -79,4 +81,4 @@ userSchema.methods.displayUser = function (id = null) {
   };
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model("User", userSchema);
