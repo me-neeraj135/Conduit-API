@@ -1,18 +1,19 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-var User = require('../models/User');
-var auth = require('../middlewares/auth');
+var User = require("../models/User");
+var auth = require("../middlewares/auth");
 
 //Get Profile (Optional Authentication)
-router.get('/:username', auth.authorizeOptional, async (req, res, next) => {
+router.get("/:username", auth.authorizeOptional, async (req, res, next) => {
   var id = req.user.userId;
   var username = req.params.username;
   try {
-    var user = await User.findOne({ username: username });
+    var user = await User.findOne({ username });
+
     if (user) {
       return res.status(201).json({ profile: user.displayUser(id) });
     } else {
-      return res.status(400).json({ error: 'No such user exists' });
+      return res.status(400).json({ error: "No such user exists" });
     }
   } catch (error) {
     next(error);
@@ -23,13 +24,13 @@ router.get('/:username', auth.authorizeOptional, async (req, res, next) => {
 router.use(auth.verifyToken);
 
 //Follow User (Authenticated)
-router.post('/:username/follow', async (req, res, next) => {
+router.post("/:username/follow", async (req, res, next) => {
   var id = req.user.userId;
   var username = req.params.username;
   try {
     var user1 = await User.findOne({ username });
     if (!user1) {
-      return res.status(400).json({ error: 'No such user exists' });
+      return res.status(400).json({ error: "No such user exists" });
     }
 
     var user2 = await User.findById(id);
@@ -55,7 +56,7 @@ router.post('/:username/follow', async (req, res, next) => {
     } else {
       return res
         .status(400)
-        .json({ errors: { body: 'You are already following the person' } });
+        .json({ errors: { body: "You are already following the person" } });
     }
   } catch (error) {
     next(error);
@@ -63,12 +64,12 @@ router.post('/:username/follow', async (req, res, next) => {
 });
 
 //Unfollow User (Authenticated)
-router.delete('/:username/follow', async (req, res, next) => {
+router.delete("/:username/follow", async (req, res, next) => {
   var username = req.params.username;
   try {
     var user1 = await User.findOne({ username });
     if (!user1) {
-      return res.status(400).json({ errors: 'No such user exists' });
+      return res.status(400).json({ errors: "No such user exists" });
     }
     var user2 = await User.findById(req.user.userId);
     if (user2.followingList.includes(user1.id)) {
@@ -90,7 +91,7 @@ router.delete('/:username/follow', async (req, res, next) => {
     } else {
       return res
         .status(400)
-        .json({ errors: { body: 'You are not following this person' } });
+        .json({ errors: { body: "You are not following this person" } });
     }
   } catch (error) {
     next(error);

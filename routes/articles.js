@@ -1,13 +1,13 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-var Article = require('../models/Article');
-var User = require('../models/User');
-var Comment = require('../models/Comment');
-var slugger = require('slugger');
-var auth = require('../middlewares/auth');
+var Article = require("../models/Article");
+var User = require("../models/User");
+var Comment = require("../models/Comment");
+var slugger = require("slugger");
+var auth = require("../middlewares/auth");
 
 // Feed Articles  (Authenticated)
-router.get('/feed', auth.verifyToken, async (req, res, next) => {
+router.get("/feed", auth.verifyToken, async (req, res, next) => {
   var limit = 20;
   var skip = 0;
   if (req.query.limit) {
@@ -17,9 +17,9 @@ router.get('/feed', auth.verifyToken, async (req, res, next) => {
     skip = req.query.skip;
   }
   try {
-    let result = await User.findById(req.user.userId).distinct('followingList');
+    let result = await User.findById(req.user.userId).distinct("followingList");
     let articles = await Article.find({ author: { $in: result } })
-      .populate('author')
+      .populate("author")
       .limit(Number(limit))
       .skip(Number(skip))
       .sort({ createdAt: -1 });
@@ -35,12 +35,12 @@ router.get('/feed', auth.verifyToken, async (req, res, next) => {
 });
 
 //List Articles  (Optional Authentication)
-router.get('/', auth.authorizeOptional, async (req, res, next) => {
+router.get("/", auth.authorizeOptional, async (req, res, next) => {
   let id = req.user ? req.user.userId : false;
   var limit = 20,
-      skip = 0;
-  var tags = await Article.find({}).distinct('tagList');
-  var authors = await User.find({}).distinct('_id');
+    skip = 0;
+  var tags = await Article.find({}).distinct("tagList");
+  var authors = await User.find({}).distinct("_id");
 
   var tagList,
     author = null;
@@ -54,33 +54,33 @@ router.get('/', auth.authorizeOptional, async (req, res, next) => {
     skip = req.query.skip;
   }
   if (req.query.author) {
-    console.log('1');
+    console.log("1");
     var authorName = req.query.author;
     var user = await User.findOne({ username: authorName });
     if (!user) {
       return res
         .status(400)
-        .json({ errors: { body: ['There is no results for this name'] } });
+        .json({ errors: { body: ["There is no results for this name"] } });
     }
     author = user.id;
   }
 
   try {
     if (req.query.favorited) {
-      console.log('2');
+      console.log("2");
       var favorited = req.query.favorited;
       var user = await User.findOne({ username: favorited });
       if (!user) {
         return res
           .status(400)
-          .json({ errors: { body: ['There is no results for this name'] } });
+          .json({ errors: { body: ["There is no results for this name"] } });
       }
       var articles = await Article.find({
         tagList: !tagList ? { $in: tags } : tagList,
         favoriteList: user.id,
         author: !author ? { $in: authors } : author,
       })
-        .populate('author')
+        .populate("author")
         .limit(Number(limit))
         .skip(Number(skip))
         .sort({ createdAt: -1 });
@@ -91,12 +91,12 @@ router.get('/', auth.authorizeOptional, async (req, res, next) => {
         arcticlesCount: articles.length,
       });
     } else if (!req.query.favorited) {
-      console.log('yes');
+      console.log("yes");
       var articles = await Article.find({
         tagList: !tagList ? { $in: tags } : tagList,
         author: !author ? { $in: authors } : author,
       })
-        .populate('author')
+        .populate("author")
         .limit(Number(limit))
         .skip(Number(skip))
         .sort({ createdAt: -1 });
@@ -109,19 +109,18 @@ router.get('/', auth.authorizeOptional, async (req, res, next) => {
     } else {
       return res
         .status(400)
-        .json({ errors: { body: ['No results for the search'] } });
+        .json({ errors: { body: ["No results for the search"] } });
     }
   } catch (error) {
     next(error);
   }
 });
 
-
 //Get Article  (Not Authenticated)
-router.get('/:slug', async (req, res, next) => {
+router.get("/:slug", async (req, res, next) => {
   let slug = req.params.slug;
   try {
-    let article = await Article.findOne({ slug }).populate('author');
+    let article = await Article.findOne({ slug }).populate("author");
     res.status(200).json({ article: article.resultArticle() });
   } catch (error) {
     next(error);
@@ -129,11 +128,11 @@ router.get('/:slug', async (req, res, next) => {
 });
 
 //Create Article  (Authenticated)
-router.post('/', auth.verifyToken, async (req, res, next) => {
+router.post("/", auth.verifyToken, async (req, res, next) => {
   req.body.article.author = req.user.userId;
   try {
     let article = await Article.create(req.body.article);
-    let article2 = await Article.findById(article.id).populate('author');
+    let article2 = await Article.findById(article.id).populate("author");
     res.status(200).json({ article: article2.resultArticle(req.user.userId) });
   } catch (error) {
     next(error);
@@ -141,11 +140,12 @@ router.post('/', auth.verifyToken, async (req, res, next) => {
 });
 
 //Update Article  (Authenticated)
-router.put('/:slug', auth.verifyToken, async (req, res, next) => {
+router.put("/:slug", auth.verifyToken, async (req, res, next) => {
   let slug = req.params.slug;
+  console.log(slug, `sg`);
   if (req.body.article.title) {
     req.body.article.slug = slugger(req.body.article.title, {
-      replacement: '-',
+      replacement: "-",
     });
   }
   try {
@@ -153,19 +153,19 @@ router.put('/:slug', auth.verifyToken, async (req, res, next) => {
     if (!article) {
       return res
         .status(400)
-        .json({ errors: { body: 'Theres is no such article' } });
+        .json({ errors: { body: "Theres is no such article" } });
     }
     if (req.user.userId == article.author) {
       article = await Article.findOneAndUpdate({ slug }, req.body.article, {
         new: true,
-      }).populate('author');
+      }).populate("author");
       return res
         .status(200)
         .json({ article: article.resultArticle(req.user.userId) });
     } else {
       return res
         .status(403)
-        .json({ error: { body: 'Not Authorized to perform this action' } });
+        .json({ error: { body: "Not Authorized to perform this action" } });
     }
   } catch (error) {
     next(error);
@@ -173,23 +173,23 @@ router.put('/:slug', auth.verifyToken, async (req, res, next) => {
 });
 
 //Delete Article  (Authenticated)
-router.delete('/:slug', auth.verifyToken, async (req, res, next) => {
+router.delete("/:slug", auth.verifyToken, async (req, res, next) => {
   let slug = req.params.slug;
   try {
     let article = await Article.findOne({ slug });
     if (!article) {
       return res
         .status(400)
-        .json({ errors: { body: 'Theres is no such article' } });
+        .json({ errors: { body: "Theres is no such article" } });
     }
     if (req.user.userId == article.author) {
       article = await Article.findOneAndDelete({ slug });
       let comments = await Comment.deleteMany({ articleId: article.id });
-      return res.status(400).json({ msg: 'Article is successfully deleted' });
+      return res.status(400).json({ msg: "Article is successfully deleted" });
     } else {
       return res
         .status(403)
-        .json({ error: { body: 'Not Authorized to perform this action' } });
+        .json({ error: { body: "Not Authorized to perform this action" } });
     }
   } catch (error) {
     next(error);
@@ -197,13 +197,13 @@ router.delete('/:slug', auth.verifyToken, async (req, res, next) => {
 });
 
 //Add Comments To An Article  (Authenticated)
-router.post('/:slug/comments', auth.verifyToken, async (req, res, next) => {
+router.post("/:slug/comments", auth.verifyToken, async (req, res, next) => {
   let slug = req.params.slug;
   try {
     let article = await Article.findOne({ slug });
     if (!article) {
       return res.status(400).json({
-        errors: { body: 'Theres is no such article for this search' },
+        errors: { body: "Theres is no such article for this search" },
       });
     }
     req.body.comment.articleId = article.id;
@@ -213,7 +213,7 @@ router.post('/:slug/comments', auth.verifyToken, async (req, res, next) => {
       { slug },
       { $push: { comments: comment.id } }
     );
-    comment = await Comment.findById(comment.id).populate('author');
+    comment = await Comment.findById(comment.id).populate("author");
     return res
       .status(200)
       .json({ comment: comment.displayComment(req.user.userId) });
@@ -224,7 +224,7 @@ router.post('/:slug/comments', auth.verifyToken, async (req, res, next) => {
 
 //Get Comments From An Article   (Optional Authentication)
 router.get(
-  '/:slug/comments',
+  "/:slug/comments",
   auth.authorizeOptional,
   async (req, res, next) => {
     let slug = req.params.slug;
@@ -234,10 +234,10 @@ router.get(
       if (!article) {
         return res
           .status(400)
-          .json({ errors: { body: 'There is no such article' } });
+          .json({ errors: { body: "There is no such article" } });
       }
       let comments = await Comment.find({ articleId: article.id }).populate(
-        'author'
+        "author"
       );
       res.status(200).json({
         comments: comments.map((comment) => {
@@ -252,7 +252,7 @@ router.get(
 
 //Delete Comments  (Authenticated)
 router.delete(
-  '/:slug/comments/:id',
+  "/:slug/comments/:id",
   auth.verifyToken,
   async (req, res, next) => {
     let slug = req.params.slug;
@@ -262,7 +262,7 @@ router.delete(
       if (!article) {
         return res
           .status(400)
-          .json({ errors: { body: 'Theres is no such article' } });
+          .json({ errors: { body: "Theres is no such article" } });
       }
       let comment = await Comment.findById(id);
       if (req.user.userId == comment.author) {
@@ -271,11 +271,11 @@ router.delete(
           { slug },
           { $pull: { comments: id } }
         );
-        return res.status(200).json({ msg: 'Comment is successfully deleted' });
+        return res.status(200).json({ msg: "Comment is successfully deleted" });
       } else {
         return res
           .status(403)
-          .json({ error: { body: 'Not Authorized to perform this action' } });
+          .json({ error: { body: "Not Authorized to perform this action" } });
       }
     } catch (error) {
       next(error);
@@ -284,25 +284,25 @@ router.delete(
 );
 
 //Favorite Article  (Authenticated)
-router.post('/:slug/favorite', auth.verifyToken, async (req, res, next) => {
+router.post("/:slug/favorite", auth.verifyToken, async (req, res, next) => {
   let slug = req.params.slug;
   try {
     let article = await Article.findOne({ slug });
     if (!article) {
       return res
         .status(400)
-        .json({ errors: { body: 'Theres is no such article' } });
+        .json({ errors: { body: "Theres is no such article" } });
     }
     let user = await User.findById(req.user.userId);
     if (!article.favoriteList.includes(user.id)) {
       article = await Article.findOneAndUpdate(
         { slug },
         { $inc: { favoritesCount: 1 }, $push: { favoriteList: user.id } }
-      ).populate('author');
+      ).populate("author");
       return res.status(200).json({ article: article.resultArticle(user.id) });
     } else {
       return res.status(200).json({
-        errors: { body: 'Article is already added to your favorite list' },
+        errors: { body: "Article is already added to your favorite list" },
       });
     }
   } catch (error) {
@@ -311,35 +311,35 @@ router.post('/:slug/favorite', auth.verifyToken, async (req, res, next) => {
 });
 
 //Unfavorite Article  (Authenticated)
-router.delete('/:slug/favorite', auth.verifyToken, async (req, res, next) => {
+router.delete("/:slug/favorite", auth.verifyToken, async (req, res, next) => {
   let slug = req.params.slug;
   try {
     let article = await Article.findOne({ slug });
     if (!article) {
       return res
         .status(400)
-        .json({ errors: { body: 'Theres is no such article' } });
+        .json({ errors: { body: "Theres is no such article" } });
     }
     let user = await User.findById(req.user.userId);
     if (article.favoriteList.includes(user.id)) {
       article = await Article.findOneAndUpdate(
         { slug },
         { $inc: { favoritesCount: -1 }, $pull: { favoriteList: user.id } }
-      ).populate('author');
+      ).populate("author");
 
       return res.status(200).json({ article: article.resultArticle(user.id) });
     } else {
       return res.status(200).json({
-        errors: { body: 'Article is removed from the favorite list' },
+        errors: { body: "Article is removed from the favorite list" },
       });
     }
   } catch (error) {
     next(error);
   }
 });
-router.get('/tags', async (req, res, next) => {
+router.get("/tags", async (req, res, next) => {
   try {
-    let tags = await Article.find({}).distinct('tagList');
+    let tags = await Article.find({}).distinct("tagList");
     res.status(200).json({ tags });
   } catch (error) {
     next(error);

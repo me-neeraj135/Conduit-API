@@ -1,4 +1,4 @@
-var jwt = require('jsonwebtoken');
+var jwt = require(`jsonwebtoken`);
 
 module.exports = {
   verifyToken: async (req, res, next) => {
@@ -9,7 +9,7 @@ module.exports = {
         req.user = payload;
         return next();
       } else {
-        return res.status(401).json({ error: { body: ['Token Required'] } });
+        return res.status(401).json({ error: { body: ["Token Required"] } });
       }
     } catch (error) {
       next(error);
@@ -17,6 +17,7 @@ module.exports = {
   },
 
   authorizeOptional: async (req, res, next) => {
+    // console.log(req.headers.authorization);
     let token = req.headers.authorization;
     try {
       if (token) {
